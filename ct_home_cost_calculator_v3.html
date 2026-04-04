@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#ffffff">
+<title>CT Home Cost Calculator V3</title>
+<style>
+:root{--bg:#f6f7fb;--card:#fff;--text:#1c2430;--muted:#64748b;--line:#dbe2ea;--accent:#0f172a;--off:#e5e7eb;--offtext:#94a3b8;--good:#065f46;--bad:#991b1b}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text)}
+.wrap{max-width:960px;margin:0 auto;padding:16px 14px 36px}
+.title{font-size:30px;font-weight:800;letter-spacing:-.02em;margin:4px 0 6px}
+.sub{color:var(--muted);margin:0 0 16px;line-height:1.35}
+.tabs{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.tabbtn{border:1px solid var(--line);background:#fff;border-radius:999px;padding:10px 14px;font-size:14px;font-weight:700}
+.tabbtn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.tabpane{display:none}.tabpane.active{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;box-shadow:0 8px 24px rgba(15,23,42,.05);margin-bottom:14px}
+.card h2{font-size:18px;margin:0 0 10px}
+.grid{display:grid;gap:12px}.grid2{grid-template-columns:1fr 1fr}.grid3{grid-template-columns:1fr 1fr 1fr}
+.field label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px;font-weight:600}
+input[type=number],select{width:100%;padding:12px;border:1px solid var(--line);border-radius:12px;background:#fff;font-size:16px;color:var(--text)}
+.hint{font-size:12px;color:var(--muted);margin-top:5px;line-height:1.35}
+.resultsTop{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.metric{border:1px solid var(--line);border-radius:16px;padding:14px;background:linear-gradient(180deg,#fff,#fbfdff)}
+.metric .k{font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.metric .v{font-size:30px;font-weight:800;letter-spacing:-.03em;margin-top:4px}
+.metric.small .v{font-size:22px}
+.row{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid #eef2f7;font-size:15px}
+.row:last-child{border-bottom:0}.row .name{color:#334155}.row .val{font-weight:700;text-align:right}
+.row.off .name,.row.off .val{color:var(--offtext)}
+.foot,.eq{font-size:13px;line-height:1.45;white-space:pre-wrap}
+.foot{color:var(--muted)} .eq{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.toggles{display:flex;gap:8px;flex-wrap:wrap}
+.toggle{border:1px solid var(--line);background:#fff;border-radius:999px;padding:9px 12px;font-size:13px;font-weight:700}
+.toggle.off{background:var(--off);color:var(--offtext);border-color:#d1d5db}
+.pillrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.pill{border-radius:999px;padding:6px 10px;font-size:12px;font-weight:800;letter-spacing:.02em}
+.pill.good{background:#dcfce7;color:var(--good)}.pill.bad{background:#fee2e2;color:var(--bad)}
+.sticky{position:sticky;bottom:10px;z-index:5;margin-top:8px}
+.stickyInner{background:rgba(255,255,255,.92);backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:18px;padding:12px 14px;box-shadow:0 12px 28px rgba(15,23,42,.12);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.big{font-size:28px;font-weight:900;letter-spacing:-.03em}
+.btn{border:0;background:var(--accent);color:#fff;border-radius:12px;padding:12px 14px;font-size:15px;font-weight:700}
+.btn.secondary{background:#fff;color:var(--accent);border:1px solid var(--line)}
+@media (max-width:700px){.grid2,.grid3,.resultsTop{grid-template-columns:1fr}.title{font-size:26px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="title">CT Home Cost Calculator V3</div>
+  <p class="sub">V3 uses a monthly income input, smooth square-foot interpolation, grocery presets, fixed fitness cost in the calculation, and expense toggles with reset buttons.</p>
+
+  <div class="tabs">
+    <button class="tabbtn active" data-tab="calculator">Calculator</button>
+    <button class="tabbtn" data-tab="math">How the math works</button>
+  </div>
+
+  <div id="calculator" class="tabpane active">
+    <div class="card">
+      <h2>Home setup</h2>
+      <div class="grid grid3">
+        <div class="field"><label>Property type</label><select id="propertyType"><option value="townhouse">Townhouse / Condo</option><option value="single">Single-family</option></select></div>
+        <div class="field"><label>Heating type</label><select id="heatingType"><option value="heatpump">Heat pump</option><option value="gas">Natural gas</option><option value="propane">Propane</option><option value="oil">Oil</option><option value="electric">Electric resistance</option></select></div>
+        <div class="field"><label>Cooling type</label><select id="coolingType"><option value="mini">Mini split</option><option value="central">Central AC</option></select></div>
+        <div class="field"><label>Security system</label><select id="securityType"><option value="ring">Ring-style</option><option value="simplisafe">SimpliSafe-style</option><option value="none">None</option></select></div>
+        <div class="field"><label>Exact square footage</label><input type="number" id="sqft" value="1800" min="800" step="1"></div>
+        <div class="field"><label>HOA dues</label><input type="number" id="hoa" value="350" min="0" step="10"></div>
+      </div>
+      <div class="hint">Square footage uses smooth linear interpolation between planning anchor points instead of snapping to the nearest preset size.</div>
+    </div>
+
+    <div class="card">
+      <h2>Mortgage & ownership inputs</h2>
+      <div class="grid grid3">
+        <div class="field"><label>Home price</label><input type="number" id="homePrice" value="400000" min="0" step="1000"></div>
+        <div class="field"><label>Down payment (%)</label><input type="number" id="downPct" value="10" min="0" max="100" step="0.1"></div>
+        <div class="field"><label>Interest rate (%)</label><input type="number" id="interestRate" value="6.75" min="0" max="20" step="0.01"></div>
+        <div class="field"><label>Property taxes</label><input type="number" id="propertyTaxes" value="500" min="0" step="10"></div>
+        <div class="field"><label>Homeowners insurance</label><input type="number" id="insurance" value="150" min="0" step="5"></div>
+        <div class="field"><label>Mortgage insurance / PMI</label><input type="number" id="mortgageInsurance" value="120" min="0" step="5"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Groceries and income</h2>
+      <div class="grid grid2">
+        <div class="field"><label>Grocery household preset</label><select id="groceryPreset"><option value="couple">Couple</option><option value="couple_infant">Couple + infant / newborn</option><option value="couple_child">Couple + child</option><option value="couple_infant_child">Couple + infant / newborn + child</option></select></div>
+        <div class="field"><label>Monthly income</label><input type="number" id="monthlyIncome" value="9500" min="0" step="50"></div>
+      </div>
+      <div class="hint">Monthly income is whatever take-home number you want to compare costs against.</div>
+    </div>
+    <div class="card">
+      <h2>Expense filters</h2>
+      <div class="hint" style="margin-bottom:10px">Tap an expense to gray it out and exclude it from the total. Tap again to include it.</div>
+      <div class="toggles" id="toggleWrap"></div>
+      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn secondary" id="resetFiltersBtn">Reset filters only</button>
+        <button class="btn secondary" id="resetAllBtn">Reset all inputs</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Results</h2>
+      <div class="resultsTop">
+        <div class="metric"><div class="k">All-in monthly total</div><div class="v" id="grandTotal">$0</div></div>
+        <div class="metric small"><div class="k">Monthly income</div><div class="v" id="monthlyIncomeOut">$0</div></div>
+      </div>
+      <div class="resultsTop" style="margin-top:12px">
+        <div class="metric small"><div class="k">Discretionary / investable amount</div><div class="v" id="leftoverTotal">$0</div></div>
+        <div class="metric small"><div class="k">Income vs costs</div><div class="pillrow" style="margin-top:8px"><span id="budgetPill" class="pill good">Under budget</span><span id="costPctPill" class="pill">0% of income</span></div><div class="hint" id="incomeNarrative" style="margin-top:10px"></div></div>
+      </div>
+
+      <div class="row" id="row_mortgagePI"><div class="name">Mortgage principal & interest</div><div class="val" id="outMortgagePI"></div></div>
+      <div class="row" id="row_pmi"><div class="name">Mortgage insurance / PMI</div><div class="val" id="outPMI"></div></div>
+      <div class="row" id="row_taxes"><div class="name">Property taxes</div><div class="val" id="outTaxes"></div></div>
+      <div class="row" id="row_insurance"><div class="name">Homeowners insurance</div><div class="val" id="outInsurance"></div></div>
+      <div class="row" id="row_hoa"><div class="name">HOA</div><div class="val" id="outHOA"></div></div>
+      <div class="row" id="row_streamingInternet"><div class="name">Streaming + internet</div><div class="val" id="outStreamingInternet"></div></div>
+      <div class="row" id="row_fitness"><div class="name">Fitness (fixed)</div><div class="val" id="outFitness"></div></div>
+      <div class="row" id="row_groceries"><div class="name">Groceries</div><div class="val" id="outGroceries"></div></div>
+      <div class="row" id="row_waterTrash"><div class="name">Water / sewer / trash</div><div class="val" id="outWaterTrash"></div></div>
+      <div class="row" id="row_security"><div class="name">Security</div><div class="val" id="outSecurity"></div></div>
+      <div class="row" id="row_electric"><div class="name">Non-heating electric</div><div class="val" id="outElectric"></div></div>
+      <div class="row" id="row_cooling"><div class="name">Cooling</div><div class="val" id="outCooling"></div></div>
+      <div class="row" id="row_heating"><div class="name">Heating</div><div class="val" id="outHeating"></div></div>
+      <div class="row" id="row_lawn"><div class="name">Lawn care</div><div class="val" id="outLawn"></div></div>
+      <div class="row" id="row_snow"><div class="name">Snow removal</div><div class="val" id="outSnow"></div></div>
+    </div>
+
+    <div class="sticky"><div class="stickyInner"><div><div class="hint" style="margin:0;font-weight:700;text-transform:uppercase;letter-spacing:.05em">Estimated monthly total</div><div class="big" id="stickyTotal">$0</div></div><button class="btn" id="shareBtn">Copy summary</button></div></div>
+  </div>
+
+  <div id="math" class="tabpane">
+    <div class="card"><h2>How the math works</h2><div class="foot" id="mathSummary"></div></div>
+    <div class="card"><h2>Mortgage math</h2><div class="eq" id="mortgageMath"></div></div>
+    <div class="card"><h2>Interpolation & grocery math</h2><div class="eq" id="utilityMath"></div></div>
+    <div class="card"><h2>Total monthly formula</h2><div class="eq" id="totalMath"></div></div>
+  </div>
+</div>
+
+<script>
+const fixed={ytv:90,sundayTicket:31.50,netflix:19.99,prime:14.99,disney:18.99,max:18.49,apple:12.99,internet:85,fitness:322.13};
+const groceries={couple:{label:"Couple",value:900},couple_infant:{label:"Couple + infant / newborn",value:1100},couple_child:{label:"Couple + child",value:1150},couple_infant_child:{label:"Couple + infant / newborn + child",value:1350}};
+const xs=[1200,1500,1800,2000,2500];
+const tables={electric:{1200:170,1500:195,1800:220,2000:240,2500:275},coolingCentral:{1200:55,1500:65,1800:75,2000:85,2500:100},coolingMini:{1200:45,1500:55,1800:65,2000:75,2500:85},heating:{gas:{1200:150,1500:185,1800:220,2000:250,2500:285},heatpump:{1200:130,1500:165,1800:195,2000:225,2500:250},propane:{1200:220,1500:270,1800:320,2000:360,2500:425},oil:{1200:270,1500:325,1800:385,2000:425,2500:475},electric:{1200:375,1500:450,1800:525,2000:575,2500:650}},waterTrash:{townhouse:{1200:120,1500:125,1800:130,2000:135,2500:145},single:{1200:135,1500:140,1800:145,2000:150,2500:160}},lawn:{1200:45,1500:55,1800:65,2000:75,2500:90},snow:{1200:35,1500:45,1800:55,2000:65,2500:80},security:{ring:40,simplisafe:50,none:0}};
+const defaults={propertyType:"townhouse",heatingType:"heatpump",coolingType:"mini",securityType:"ring",sqft:1800,hoa:350,homePrice:400000,downPct:10,interestRate:6.75,propertyTaxes:500,insurance:150,mortgageInsurance:120,groceryPreset:"couple",monthlyIncome:9500};
+const keys=[["mortgagePI","Mortgage P&I"],["pmi","PMI"],["taxes","Property taxes"],["insurance","Insurance"],["hoa","HOA"],["streamingInternet","Streaming + internet"],["fitness","Fitness"],["groceries","Groceries"],["waterTrash","Water/trash"],["security","Security"],["electric","Electric"],["cooling","Cooling"],["heating","Heating"],["lawn","Lawn"],["snow","Snow"]];
+const included={}; keys.forEach(([k])=>included[k]=true);
+const $=id=>document.getElementById(id), money=v=>v.toLocaleString(undefined,{style:"currency",currency:"USD",maximumFractionDigits:0}), money2=v=>v.toLocaleString(undefined,{style:"currency",currency:"USD",minimumFractionDigits:2,maximumFractionDigits:2});
+function interp(t,x){x=+x;if(x<=xs[0]){let x1=xs[0],x2=xs[1],y1=t[x1],y2=t[x2];return y1+(x-x1)*(y2-y1)/(x2-x1)} if(x>=xs[xs.length-1]){let x1=xs[xs.length-2],x2=xs[xs.length-1],y1=t[x1],y2=t[x2];return y1+(x-x1)*(y2-y1)/(x2-x1)} for(let i=0;i<xs.length-1;i++){let x1=xs[i],x2=xs[i+1]; if(x>=x1&&x<=x2){let y1=t[x1],y2=t[x2]; return y1+(x-x1)*(y2-y1)/(x2-x1)}} return t[1800]}
+function mortgagePI(price,downPct,ratePct){const loan=price*(1-downPct/100),n=360,r=(ratePct/100)/12; if(loan<=0)return{loanAmount:0,monthlyPI:0,n,r}; if(r===0)return{loanAmount:loan,monthlyPI:loan/n,n,r}; const f=Math.pow(1+r,n); return{loanAmount:loan,monthlyPI:loan*(r*f)/(f-1),n,r}}
+function toggleButtons(){const wrap=$("toggleWrap"); wrap.innerHTML=""; keys.forEach(([k,label])=>{const b=document.createElement("button"); b.className="toggle"+(included[k]?"":" off"); b.textContent=label; b.onclick=()=>{included[k]=!included[k]; toggleButtons(); calc()}; wrap.appendChild(b)})}
+function setRow(k){const row=$("row_"+k); if(!row)return; row.classList.toggle("off",!included[k])}
+function resetFilters(){keys.forEach(([k])=>included[k]=true); toggleButtons(); calc()}
+function resetAll(){Object.entries(defaults).forEach(([k,v])=>$(k).value=v); resetFilters()}
+function calc(){
+ const sqft=Math.max(800,+$("sqft").value||0),ptype=$("propertyType").value,heat=$("heatingType").value,cool=$("coolingType").value,sec=$("securityType").value,hoa=+$("hoa").value||0,price=+$("homePrice").value||0,downPct=+$("downPct").value||0,ratePct=+$("interestRate").value||0,taxes=+$("propertyTaxes").value||0,ins=+$("insurance").value||0,pmiIn=+$("mortgageInsurance").value||0,gKey=$("groceryPreset").value,monthlyIncome=+$("monthlyIncome").value||0;
+ const m=mortgagePI(price,downPct,ratePct),pmi=downPct<20?pmiIn:0,streamingInternet=Object.values(fixed).filter(v=>typeof v==="number").reduce((a,b)=>a+b,0)-fixed.fitness,fitness=fixed.fitness,groc=groceries[gKey].value,waterTrash=interp(tables.waterTrash[ptype],sqft),security=tables.security[sec],electric=interp(tables.electric,sqft),cooling=interp(cool==="central"?tables.coolingCentral:tables.coolingMini,sqft),heating=interp(tables.heating[heat],sqft),lawn=ptype==="single"?interp(tables.lawn,sqft):0,snow=ptype==="single"?interp(tables.snow,sqft):0;
+ const costs={mortgagePI:m.monthlyPI,pmi,taxes,insurance:ins,hoa,streamingInternet,fitness,groceries:groc,waterTrash,security,electric,cooling,heating,lawn,snow};
+ const total=Object.entries(costs).reduce((s,[k,v])=>s+(included[k]?v:0),0),leftover=monthlyIncome-total,costPct=monthlyIncome>0?(100*total/monthlyIncome):0;
+ $("grandTotal").textContent=money(total); $("stickyTotal").textContent=money(total); $("monthlyIncomeOut").textContent=money(monthlyIncome); $("leftoverTotal").textContent=money(leftover); $("budgetPill").textContent=leftover>=0?"Under budget":"Over budget"; $("budgetPill").className="pill "+(leftover>=0?"good":"bad"); $("costPctPill").textContent=costPct.toFixed(1)+"% of income"; $("incomeNarrative").textContent=leftover>=0?`Estimated leftover after included costs: ${money(leftover)} per month.`:`Included costs exceed monthly income by ${money(Math.abs(leftover))} per month.`;
+ $("outMortgagePI").textContent=money(m.monthlyPI); $("outPMI").textContent=pmi?money(pmi):"$0"; $("outTaxes").textContent=money(taxes); $("outInsurance").textContent=money(ins); $("outHOA").textContent=money(hoa); $("outStreamingInternet").textContent=money(streamingInternet); $("outFitness").textContent=money(fitness); $("outGroceries").textContent=money(groc); $("outWaterTrash").textContent=money(waterTrash); $("outSecurity").textContent=money(security); $("outElectric").textContent=money(electric); $("outCooling").textContent=money(cooling); $("outHeating").textContent=money(heating); $("outLawn").textContent=lawn?money(lawn):"Included / $0"; $("outSnow").textContent=snow?money(snow):"Included / $0";
+ ["mortgagePI","pmi","taxes","insurance","hoa","streamingInternet","fitness","groceries","waterTrash","security","electric","cooling","heating","lawn","snow"].forEach(setRow);
+ const heatLabel={heatpump:"Heat pump",gas:"Natural gas",propane:"Propane",oil:"Oil",electric:"Electric resistance"}[heat],coolLabel={mini:"Mini split",central:"Central AC"}[cool],ptypeLabel=ptype==="townhouse"?"Townhouse / Condo":"Single-family";
+ $("mathSummary").textContent=`Scenario: ${ptypeLabel}, ${sqft.toFixed(0)} sq ft, ${heatLabel}, ${coolLabel}. Included monthly total: ${money2(total)}. Monthly income entered: ${money2(monthlyIncome)}. Leftover after included costs: ${money2(leftover)}.`;
+ $("mortgageMath").textContent=`Loan term = 30 years = 360 months\nHome price = ${money2(price)}\nDown payment = ${downPct.toFixed(2)}% = ${money2(price*downPct/100)}\nLoan amount = ${money2(m.loanAmount)}\nMonthly rate r = ${m.r.toFixed(8)}\nMortgage P&I formula: M = P × [r(1+r)^n] / [(1+r)^n − 1]\nMonthly mortgage P&I = ${money2(m.monthlyPI)}\nPMI used = ${money2(pmi)}`;
+ $("utilityMath").textContent=`Exact square footage uses linear interpolation between anchor points 1200, 1500, 1800, 2000, and 2500 sq ft.\nFormula: y = y1 + (x − x1) × (y2 − y1) / (x2 − x1)\nFor ${sqft.toFixed(0)} sq ft: electric ${money2(electric)}, cooling ${money2(cooling)}, heating ${money2(heating)}, water/trash ${money2(waterTrash)}, lawn ${lawn?money2(lawn):"$0"}, snow ${snow?money2(snow):"$0"}\nGrocery preset selected: ${groceries[gKey].label} = ${money2(groc)}\nFitness is fixed at ${money2(fitness)} / month.`;
+ $("totalMath").textContent=`Streaming + internet = ${money2(streamingInternet)}\nFitness fixed = ${money2(fitness)}\nOnly included expenses count in the total.\nAll-in monthly total = ${money2(total)}\nDiscretionary / investable amount = ${money2(monthlyIncome)} − ${money2(total)} = ${money2(leftover)}`;
+ return {total,leftover}
+}
+document.querySelectorAll(".tabbtn").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tabbtn").forEach(x=>x.classList.remove("active")); document.querySelectorAll(".tabpane").forEach(x=>x.classList.remove("active")); b.classList.add("active"); $(b.dataset.tab).classList.add("active")});
+["propertyType","heatingType","coolingType","securityType","sqft","hoa","homePrice","downPct","interestRate","propertyTaxes","insurance","mortgageInsurance","groceryPreset","monthlyIncome"].forEach(id=>$(id).addEventListener("input",calc));
+$("resetFiltersBtn").onclick=resetFilters; $("resetAllBtn").onclick=resetAll; $("shareBtn").onclick=()=>{const r=calc(); const txt=`CT Home Cost Calculator V3\nMonthly total: ${money(r.total)}\nEstimated leftover: ${money(r.leftover)}`; navigator.clipboard.writeText(txt).then(()=>alert("Summary copied to clipboard."))};
+toggleButtons(); calc();
+</script>
+</body>
+</html>
